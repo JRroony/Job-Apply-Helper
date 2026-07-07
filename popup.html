@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Job Autofill</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup">
+      <header class="popup__header">
+        <h1>Job Autofill</h1>
+        <p>Local profile data for filling applications.</p>
+      </header>
+
+      <form id="profileForm" class="form">
+        <div class="grid">
+          <label>
+            <span>First name</span>
+            <input id="firstName" name="firstName" autocomplete="given-name">
+          </label>
+
+          <label>
+            <span>Last name</span>
+            <input id="lastName" name="lastName" autocomplete="family-name">
+          </label>
+
+          <label class="span-2">
+            <span>Full name</span>
+            <input id="fullName" name="fullName" autocomplete="name">
+          </label>
+
+          <label>
+            <span>Email</span>
+            <input id="email" name="email" type="email" autocomplete="email">
+          </label>
+
+          <label>
+            <span>Phone</span>
+            <input id="phone" name="phone" type="tel" autocomplete="tel">
+          </label>
+
+          <label>
+            <span>Phone country code</span>
+            <select id="phoneCountryCode" name="phoneCountryCode">
+              <option value="">Select...</option>
+              <option value="United States (+1)">United States (+1)</option>
+              <option value="Canada (+1)">Canada (+1)</option>
+              <option value="China (+86)">China (+86)</option>
+              <option value="India (+91)">India (+91)</option>
+              <option value="United Kingdom (+44)">United Kingdom (+44)</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+
+          <label class="span-2">
+            <span>Location</span>
+            <input id="location" name="location" autocomplete="address-level2">
+          </label>
+
+          <label class="span-2">
+            <span>LinkedIn</span>
+            <input id="linkedin" name="linkedin" type="url" placeholder="https://www.linkedin.com/in/you">
+          </label>
+
+          <label class="span-2">
+            <span>GitHub</span>
+            <input id="github" name="github" type="url" placeholder="https://github.com/you">
+          </label>
+
+          <label class="span-2">
+            <span>Portfolio</span>
+            <input id="portfolio" name="portfolio" type="url" placeholder="https://your-site.com">
+          </label>
+
+          <label>
+            <span>Salary</span>
+            <input id="salary" name="salary" placeholder="Expected salary or range">
+          </label>
+
+          <label>
+            <span>Work authorization</span>
+            <select id="workAuthorization" name="workAuthorization">
+              <option value="">Select...</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Need sponsorship</span>
+            <select id="needSponsorship" name="needSponsorship">
+              <option value="">Select...</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Relocation</span>
+            <select id="relocation" name="relocation">
+              <option value="">Select</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </label>
+
+          <div class="section-note span-2">
+            <h2>Voluntary EEO / demographic fields</h2>
+            <p>Sensitive optional fields. Blank values are skipped.</p>
+          </div>
+
+          <fieldset class="choice-group span-2" id="genderIdentityGroup">
+            <legend>Gender identity</legend>
+            <label><input type="checkbox" name="genderIdentity" value="Woman"> <span>Woman</span></label>
+            <label><input type="checkbox" name="genderIdentity" value="Man"> <span>Man</span></label>
+            <label><input type="checkbox" name="genderIdentity" value="Non-binary"> <span>Non-binary</span></label>
+            <label><input type="checkbox" name="genderIdentity" value="Genderqueer"> <span>Genderqueer</span></label>
+            <label><input type="checkbox" name="genderIdentity" value="Genderfluid"> <span>Genderfluid</span></label>
+            <label><input type="checkbox" name="genderIdentity" value="Agender"> <span>Agender</span></label>
+            <label><input type="checkbox" name="genderIdentity" value="Two-Spirit"> <span>Two-Spirit</span></label>
+            <label><input type="checkbox" name="genderIdentity" value="Transgender"> <span>Transgender</span></label>
+            <label><input type="checkbox" name="genderIdentity" value="Intersex"> <span>Intersex</span></label>
+            <label><input type="checkbox" name="genderIdentity" value="Not listed"> <span>Not listed</span></label>
+            <label><input type="checkbox" name="genderIdentity" value="Prefer not to answer"> <span>Prefer not to answer</span></label>
+          </fieldset>
+
+          <fieldset class="choice-group span-2" id="racialEthnicBackgroundGroup">
+            <legend>Racial/ethnic background</legend>
+            <label><input type="checkbox" name="racialEthnicBackground" value="Asian"> <span>Asian</span></label>
+            <label><input type="checkbox" name="racialEthnicBackground" value="Black or African American"> <span>Black or African American</span></label>
+            <label><input type="checkbox" name="racialEthnicBackground" value="Hispanic or Latino/a/x"> <span>Hispanic or Latino/a/x</span></label>
+            <label><input type="checkbox" name="racialEthnicBackground" value="Middle Eastern or North African"> <span>Middle Eastern or North African</span></label>
+            <label><input type="checkbox" name="racialEthnicBackground" value="Native American or Alaska Native"> <span>Native American or Alaska Native</span></label>
+            <label><input type="checkbox" name="racialEthnicBackground" value="Native Hawaiian or Other Pacific Islander"> <span>Native Hawaiian or Other Pacific Islander</span></label>
+            <label><input type="checkbox" name="racialEthnicBackground" value="White"> <span>White</span></label>
+            <label><input type="checkbox" name="racialEthnicBackground" value="Two or more races"> <span>Two or more races</span></label>
+            <label><input type="checkbox" name="racialEthnicBackground" value="Not listed"> <span>Not listed</span></label>
+            <label><input type="checkbox" name="racialEthnicBackground" value="Prefer not to answer"> <span>Prefer not to answer</span></label>
+          </fieldset>
+
+          <fieldset class="choice-group span-2" id="sexualOrientationGroup">
+            <legend>Sexual orientation</legend>
+            <label><input type="checkbox" name="sexualOrientation" value="Straight / Heterosexual"> <span>Straight / Heterosexual</span></label>
+            <label><input type="checkbox" name="sexualOrientation" value="Gay"> <span>Gay</span></label>
+            <label><input type="checkbox" name="sexualOrientation" value="Lesbian"> <span>Lesbian</span></label>
+            <label><input type="checkbox" name="sexualOrientation" value="Bisexual"> <span>Bisexual</span></label>
+            <label><input type="checkbox" name="sexualOrientation" value="Pansexual"> <span>Pansexual</span></label>
+            <label><input type="checkbox" name="sexualOrientation" value="Queer"> <span>Queer</span></label>
+            <label><input type="checkbox" name="sexualOrientation" value="Asexual"> <span>Asexual</span></label>
+            <label><input type="checkbox" name="sexualOrientation" value="Questioning"> <span>Questioning</span></label>
+            <label><input type="checkbox" name="sexualOrientation" value="Not listed"> <span>Not listed</span></label>
+            <label><input type="checkbox" name="sexualOrientation" value="Prefer not to answer"> <span>Prefer not to answer</span></label>
+          </fieldset>
+
+          <label class="span-2">
+            <span>Transgender identity</span>
+            <select id="transgenderIdentity" name="transgenderIdentity">
+              <option value="">Select</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+              <option value="Prefer not to answer">Prefer not to answer</option>
+            </select>
+          </label>
+
+          <label class="span-2">
+            <span>Disability status</span>
+            <select id="disabilityStatus" name="disabilityStatus">
+              <option value="">Select</option>
+              <option value="Yes, I have a disability or have had one in the past">Yes, I have a disability or have had one in the past</option>
+              <option value="No, I do not have a disability and have not had one in the past">No, I do not have a disability and have not had one in the past</option>
+              <option value="Prefer not to answer">Prefer not to answer</option>
+            </select>
+          </label>
+
+          <label class="span-2">
+            <span>Veteran status</span>
+            <select id="veteranStatus" name="veteranStatus">
+              <option value="">Select...</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+              <option value="Prefer not to answer">Prefer not to answer</option>
+            </select>
+          </label>
+
+          <label class="span-2">
+            <span>Cover letter</span>
+            <textarea id="coverLetter" name="coverLetter" rows="5"></textarea>
+          </label>
+
+          <label class="span-2 file-field">
+            <span>Resume</span>
+            <input id="resumeFile" name="resumeFile" type="file" accept=".pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain">
+          </label>
+        </div>
+      </form>
+
+      <div id="resumeStatus" class="status status--muted">No resume saved.</div>
+
+      <div class="actions">
+        <button id="saveButton" type="button">Save</button>
+        <button id="clearButton" type="button" class="secondary">Clear</button>
+        <button id="refillButton" type="button" class="primary">Refill Current Page</button>
+      </div>
+
+      <div id="message" class="status" role="status" aria-live="polite"></div>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Application Tracker</title>
+    <link rel="stylesheet" href="jobs.css">
+  </head>
+  <body>
+    <main class="tracker">
+      <header class="tracker__header">
+        <div>
+          <h1>Application Tracker</h1>
+          <p>Local job application records stored in this browser.</p>
+        </div>
+        <div id="recordCount" class="record-count">0 applications</div>
+      </header>
+
+      <section class="toolbar" aria-label="Application tracker controls">
+        <label class="search-field">
+          <span>Search</span>
+          <input id="searchInput" type="search" placeholder="Title, company, URL, status, notes">
+        </label>
+
+        <label class="status-field">
+          <span>Status</span>
+          <select id="statusFilter"></select>
+        </label>
+
+        <div class="toolbar__actions">
+          <button id="exportCsvButton" type="button">Export CSV</button>
+          <button id="exportJsonButton" type="button">Export JSON</button>
+          <button id="importJsonButton" type="button">Import JSON</button>
+          <input id="importJsonInput" type="file" accept=".json,application/json" hidden>
+        </div>
+      </section>
+
+      <div id="trackerMessage" class="status" role="status" aria-live="polite"></div>
+
+      <section class="table-section" aria-label="Recorded applications">
+        <div class="table-wrap">
+          <table id="applicationsTable">
+            <thead>
+              <tr>
+                <th scope="col">Title</th>
+                <th scope="col">Company</th>
+                <th scope="col">Application URL</th>
+                <th scope="col">Applied At</th>
+                <th scope="col">Status</th>
+                <th scope="col">Source</th>
+                <th scope="col">Notes</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="applicationsTableBody"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty-state" hidden>No applications recorded yet.</div>
+      </section>
+    </main>
+
+    <script src="applications.js"></script>
+    <script src="jobs.js"></script>
+  </body>
+</html>

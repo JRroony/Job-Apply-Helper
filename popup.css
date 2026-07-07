@@ -181,6 +181,15 @@ button.secondary {
   color: #b91c1c;
 }
 
+.actions .wide {
+  grid-column: span 2;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .status {
   min-height: 18px;
   margin-top: 10px;

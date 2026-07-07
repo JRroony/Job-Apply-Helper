@@ -6,6 +6,7 @@
   window.__localJobAutofillInstalled = true;
 
   const FILL_FORM = "FILL_FORM";
+  const EXTRACT_JOB_INFO = "EXTRACT_JOB_INFO";
 
   const PROFILE_KEYS = [
     "firstName",
@@ -290,21 +291,41 @@
   ];
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-    if (!message || message.type !== FILL_FORM) {
+    if (!message) {
       return false;
     }
 
-    fillPage(message.profile || {}, message.resume || null, { overwrite: Boolean(message.overwrite) })
-      .then(sendResponse)
-      .catch((error) => {
+    if (message.type === FILL_FORM) {
+      fillPage(message.profile || {}, message.resume || null, { overwrite: Boolean(message.overwrite) })
+        .then(sendResponse)
+        .catch((error) => {
+          sendResponse({
+            filledCount: 0,
+            resumeAttached: false,
+            error: error && error.message ? error.message : String(error)
+          });
+        });
+
+      return true;
+    }
+
+    if (message.type === EXTRACT_JOB_INFO) {
+      try {
         sendResponse({
-          filledCount: 0,
-          resumeAttached: false,
+          jobInfo: extractJobInfoFromPage(),
+          error: null
+        });
+      } catch (error) {
+        sendResponse({
+          jobInfo: null,
           error: error && error.message ? error.message : String(error)
         });
-      });
+      }
 
-    return true;
+      return false;
+    }
+
+    return false;
   });
 
   queuePageLoadAutofill();
@@ -318,6 +339,451 @@
         console.warn("Job autofill page-load fill skipped.", error);
       }
     }, 500);
+  }
+
+  function extractJobInfoFromPage() {
+    const structuredJobInfo = extractJobInfoFromStructuredData();
+
+    if (structuredJobInfo) {
+      return finalizeJobInfo(structuredJobInfo);
+    }
+
+    const hostname = getHostname(window.location.href);
+
+    if (isGreenhouseHost(hostname)) {
+      return finalizeJobInfo(extractGreenhouseJobInfo());
+    }
+
+    if (isLeverHost(hostname)) {
+      return finalizeJobInfo(extractLeverJobInfo());
+    }
+
+    if (isAshbyHost(hostname)) {
+      return finalizeJobInfo(extractAshbyJobInfo());
+    }
+
+    if (isWorkdayHost(hostname)) {
+      return finalizeJobInfo(extractWorkdayJobInfo());
+    }
+
+    return finalizeJobInfo(extractGenericJobInfo());
+  }
+
+  function extractJobInfoFromStructuredData() {
+    const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
+
+    for (const script of scripts) {
+      const json = parseJsonLd(script.textContent || "");
+      const jobPosting = findJobPostingJsonLd(json);
+
+      if (!jobPosting) {
+        continue;
+      }
+
+      return {
+        title: getJsonLdString(jobPosting.title),
+        company: getJsonLdOrganizationName(jobPosting.hiringOrganization),
+        application_url: getJsonLdString(jobPosting.url) || window.location.href,
+        source: getHostnameSource()
+      };
+    }
+
+    return null;
+  }
+
+  function extractGreenhouseJobInfo() {
+    const parsed = parseTitleAndCompanyFromDocumentTitle(document.title, window.location.hostname);
+
+    return {
+      title: getFirstTextFromSelectors([
+        "h1",
+        ".app-title",
+        ".job__title",
+        '[data-qa="job-title"]'
+      ]) || parsed.title,
+      company: getFirstTextFromSelectors([
+        ".company-name",
+        ".app-company"
+      ]) || getMetaContent('meta[property="og:site_name"]') || parsed.company,
+      application_url: window.location.href,
+      source: "greenhouse"
+    };
+  }
+
+  function extractLeverJobInfo() {
+    const parsed = parseTitleAndCompanyFromDocumentTitle(document.title, window.location.hostname);
+
+    return {
+      title: getFirstTextFromSelectors([
+        ".posting-headline h2",
+        ".posting-title h2",
+        "h1"
+      ]) || parsed.title,
+      company: getFirstTextFromSelectors([
+        ".main-header-logo img",
+        ".company"
+      ]) || getMetaContent('meta[property="og:site_name"]') || parsed.company,
+      application_url: window.location.href,
+      source: "lever"
+    };
+  }
+
+  function extractAshbyJobInfo() {
+    const parsed = parseTitleAndCompanyFromDocumentTitle(document.title, window.location.hostname);
+
+    return {
+      title: getFirstTextFromSelectors([
+        "h1",
+        '[data-testid*="job-title"]'
+      ]) || parsed.title,
+      company: getMetaContent('meta[property="og:site_name"]') || parsed.company,
+      application_url: window.location.href,
+      source: "ashby"
+    };
+  }
+
+  function extractWorkdayJobInfo() {
+    const parsed = parseTitleAndCompanyFromDocumentTitle(document.title, window.location.hostname);
+
+    return {
+      title: getFirstTextFromSelectors([
+        "h1",
+        '[data-automation-id="jobPostingHeader"]',
+        '[data-automation-id*="jobTitle"]'
+      ]) || parsed.title,
+      company: getMetaContent('meta[property="og:site_name"]') || parsed.company,
+      application_url: window.location.href,
+      source: "workday"
+    };
+  }
+
+  function extractGenericJobInfo() {
+    const hostname = window.location.hostname;
+    const parsed = parseTitleAndCompanyFromDocumentTitle(document.title, hostname);
+
+    return {
+      title: getFirstTextFromSelectors(["h1"]) || parsed.title || document.title,
+      company: getMetaContent('meta[property="og:site_name"]') ||
+        getMetaContent('meta[name="author"]') ||
+        parsed.company ||
+        hostnameToCompany(hostname),
+      application_url: window.location.href,
+      source: getHostnameSource()
+    };
+  }
+
+  function finalizeJobInfo(jobInfo) {
+    const applicationUrl = cleanJobText(jobInfo && jobInfo.application_url) || window.location.href;
+    const hostname = getHostname(applicationUrl) || window.location.hostname;
+    const parsed = parseTitleAndCompanyFromDocumentTitle(document.title, hostname);
+
+    return {
+      title: cleanJobText(jobInfo && jobInfo.title) ||
+        parsed.title ||
+        getFirstTextFromSelectors(["h1"]) ||
+        cleanJobText(document.title) ||
+        "Untitled role",
+      company: cleanJobText(jobInfo && jobInfo.company) ||
+        parsed.company ||
+        getMetaContent('meta[property="og:site_name"]') ||
+        getMetaContent('meta[name="author"]') ||
+        hostnameToCompany(hostname) ||
+        "Unknown company",
+      application_url: applicationUrl,
+      source: cleanJobText(jobInfo && jobInfo.source) || getHostnameSource(applicationUrl)
+    };
+  }
+
+  function parseJsonLd(value) {
+    const text = trimValue(value);
+
+    if (!text) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function findJobPostingJsonLd(value) {
+    if (!value) {
+      return null;
+    }
+
+    if (Array.isArray(value)) {
+      for (const item of value) {
+        const match = findJobPostingJsonLd(item);
+
+        if (match) {
+          return match;
+        }
+      }
+
+      return null;
+    }
+
+    if (typeof value !== "object") {
+      return null;
+    }
+
+    if (isJobPostingType(value["@type"])) {
+      return value;
+    }
+
+    if (value["@graph"]) {
+      const match = findJobPostingJsonLd(value["@graph"]);
+
+      if (match) {
+        return match;
+      }
+    }
+
+    for (const key of Object.keys(value)) {
+      const item = value[key];
+
+      if (item && typeof item === "object") {
+        const match = findJobPostingJsonLd(item);
+
+        if (match) {
+          return match;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  function isJobPostingType(value) {
+    if (Array.isArray(value)) {
+      return value.some(isJobPostingType);
+    }
+
+    return /(^|:)jobposting$/i.test(trimValue(value));
+  }
+
+  function getJsonLdOrganizationName(value) {
+    if (Array.isArray(value)) {
+      return value.map(getJsonLdOrganizationName).find(Boolean) || "";
+    }
+
+    if (!value) {
+      return "";
+    }
+
+    if (typeof value === "string") {
+      return cleanJobText(value);
+    }
+
+    if (typeof value === "object") {
+      return getJsonLdString(value.name);
+    }
+
+    return "";
+  }
+
+  function getJsonLdString(value) {
+    if (Array.isArray(value)) {
+      return value.map(getJsonLdString).find(Boolean) || "";
+    }
+
+    if (typeof value === "string" || typeof value === "number") {
+      return cleanJobText(value);
+    }
+
+    return "";
+  }
+
+  function getFirstTextFromSelectors(selectors) {
+    for (const selector of selectors) {
+      const element = document.querySelector(selector);
+      const value = getElementTextValue(element);
+
+      if (value) {
+        return value;
+      }
+    }
+
+    return "";
+  }
+
+  function getElementTextValue(element) {
+    if (!element) {
+      return "";
+    }
+
+    return cleanJobText(
+      element.getAttribute("content") ||
+      element.getAttribute("alt") ||
+      element.getAttribute("aria-label") ||
+      visibleText(element, 240)
+    );
+  }
+
+  function getMetaContent(selector) {
+    const element = document.querySelector(selector);
+
+    return element ? cleanJobText(element.getAttribute("content")) : "";
+  }
+
+  function getHostnameSource(value = window.location.href) {
+    const hostname = getHostname(value);
+
+    if (isGreenhouseHost(hostname)) {
+      return "greenhouse";
+    }
+
+    if (isLeverHost(hostname)) {
+      return "lever";
+    }
+
+    if (isAshbyHost(hostname)) {
+      return "ashby";
+    }
+
+    if (isWorkdayHost(hostname)) {
+      return "workday";
+    }
+
+    return hostname.replace(/^www\./i, "");
+  }
+
+  function getHostname(value) {
+    try {
+      return new URL(value || window.location.href).hostname.toLowerCase();
+    } catch (_error) {
+      return String(value || window.location.hostname || "").toLowerCase();
+    }
+  }
+
+  function isGreenhouseHost(hostname) {
+    return /greenhouse/i.test(hostname || "");
+  }
+
+  function isLeverHost(hostname) {
+    return /lever\.co$/i.test(hostname || "") || /\.lever\.co$/i.test(hostname || "");
+  }
+
+  function isAshbyHost(hostname) {
+    return /ashbyhq\.com$/i.test(hostname || "") || /\.ashbyhq\.com$/i.test(hostname || "");
+  }
+
+  function isWorkdayHost(hostname) {
+    return /myworkdayjobs\.com$/i.test(hostname || "") || /workdayjobs\.com$/i.test(hostname || "");
+  }
+
+  function parseTitleAndCompanyFromDocumentTitle(title, hostname) {
+    const text = cleanJobText(title).replace(/^Job Application for\s+/i, "");
+
+    if (!text) {
+      return { title: "", company: "" };
+    }
+
+    const atMatch = text.match(/^(.+?)\s+at\s+(.+)$/i);
+
+    if (atMatch) {
+      return cleanParsedTitleAndCompany(atMatch[1], atMatch[2]);
+    }
+
+    const pipeParts = splitTitleParts(text, /\s+\|\s+/);
+
+    if (pipeParts.length >= 2) {
+      return parseDelimitedTitleParts(pipeParts, hostname);
+    }
+
+    const dashParts = splitTitleParts(text, /\s+-\s+/);
+
+    if (dashParts.length >= 2) {
+      return parseDelimitedTitleParts(dashParts, hostname);
+    }
+
+    return { title: text, company: "" };
+  }
+
+  function splitTitleParts(value, separator) {
+    return value.split(separator).map(cleanJobText).filter(Boolean);
+  }
+
+  function parseDelimitedTitleParts(parts, hostname) {
+    const first = parts[0];
+    const rest = parts.slice(1).join(" - ");
+    const strippedFirst = stripCareerWords(first);
+    const strippedRest = stripCareerWords(rest);
+    const hostCompany = hostnameToCompany(hostname);
+
+    if (isCareerLabel(first)) {
+      return cleanParsedTitleAndCompany(rest, strippedFirst || hostCompany);
+    }
+
+    if (isCareerLabel(rest)) {
+      return cleanParsedTitleAndCompany(first, strippedRest || hostCompany);
+    }
+
+    if (looksLikeJobTitle(first) && !looksLikeJobTitle(rest)) {
+      return cleanParsedTitleAndCompany(first, rest);
+    }
+
+    if (looksLikeJobTitle(rest) && !looksLikeJobTitle(first)) {
+      return cleanParsedTitleAndCompany(rest, strippedFirst || first);
+    }
+
+    if (hostCompany && normalizeText(first).includes(normalizeText(hostCompany))) {
+      return cleanParsedTitleAndCompany(rest, strippedFirst || first);
+    }
+
+    return cleanParsedTitleAndCompany(first, rest);
+  }
+
+  function cleanParsedTitleAndCompany(title, company) {
+    return {
+      title: stripJobTitleNoise(title),
+      company: stripCareerWords(company)
+    };
+  }
+
+  function stripJobTitleNoise(value) {
+    return cleanJobText(value)
+      .replace(/^job\s*application\s*for\s+/i, "")
+      .replace(/\s+\|\s+.+$/i, "");
+  }
+
+  function stripCareerWords(value) {
+    return cleanJobText(value)
+      .replace(/\b(careers?|jobs?|job openings?|open roles?|hiring)\b/gi, "")
+      .replace(/\s+/g, " ")
+      .replace(/^[-|:]+|[-|:]+$/g, "")
+      .trim();
+  }
+
+  function isCareerLabel(value) {
+    return /\b(careers?|jobs?|job openings?|open roles?|hiring)\b/i.test(value || "");
+  }
+
+  function looksLikeJobTitle(value) {
+    return /\b(engineer|developer|designer|manager|director|analyst|architect|scientist|specialist|consultant|administrator|coordinator|associate|representative|recruiter|product|program|project|data|software|frontend|front end|backend|back end|full stack|intern|lead|principal|senior|staff)\b/i.test(value || "");
+  }
+
+  function hostnameToCompany(hostname) {
+    const cleanHostname = String(hostname || "")
+      .toLowerCase()
+      .replace(/^www\./, "")
+      .replace(/^(jobs|careers|apply|boards|app|recruiting)\./, "");
+    const parts = cleanHostname.split(".").filter(Boolean);
+
+    if (parts.length > 2) {
+      return parts.slice(0, parts.length - 2).join(".");
+    }
+
+    return parts[0] || cleanHostname;
+  }
+
+  function cleanJobText(value) {
+    return trimValue(value)
+      .replace(/\s+/g, " ")
+      .replace(/^[-|:]+|[-|:]+$/g, "")
+      .trim();
   }
 
   async function fillPage(profile, resume, options = {}) {

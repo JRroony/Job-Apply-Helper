@@ -29,6 +29,7 @@ const ARRAY_PROFILE_FIELDS = new Set([
 ]);
 
 const FILL_ACTIVE_TAB = "FILL_ACTIVE_TAB";
+const RECORD_CURRENT_JOB = "RECORD_CURRENT_JOB";
 
 let pendingResume = null;
 let savedResume = null;
@@ -37,6 +38,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const saveButton = document.getElementById("saveButton");
   const clearButton = document.getElementById("clearButton");
   const refillButton = document.getElementById("refillButton");
+  const recordJobButton = document.getElementById("recordJobButton");
+  const openTrackerButton = document.getElementById("openTrackerButton");
   const resumeFile = document.getElementById("resumeFile");
 
   loadStoredData();
@@ -45,6 +48,8 @@ document.addEventListener("DOMContentLoaded", () => {
   saveButton.addEventListener("click", saveProfile);
   clearButton.addEventListener("click", clearProfile);
   refillButton.addEventListener("click", refillCurrentPage);
+  recordJobButton.addEventListener("click", recordCurrentJob);
+  openTrackerButton.addEventListener("click", openApplicationTracker);
 });
 
 async function loadStoredData() {
@@ -184,6 +189,41 @@ async function refillCurrentPage() {
     setMessage(`Filled ${result.filledCount || 0} field(s).${resumeText}`, false, true);
   } catch (error) {
     setMessage(getErrorMessage(error), true);
+  }
+}
+
+async function recordCurrentJob() {
+  const recordJobButton = document.getElementById("recordJobButton");
+  setMessage("Recording current job...");
+  recordJobButton.disabled = true;
+
+  try {
+    const response = await chrome.runtime.sendMessage({ type: RECORD_CURRENT_JOB });
+    const result = response || {};
+
+    if (!result.ok || result.error) {
+      setMessage(result.error || "Could not record this job.", true);
+      return;
+    }
+
+    const application = result.application || {};
+    const action = result.action === "updated" ? "Updated" : "Recorded";
+    const companyText = application.company ? ` at ${application.company}` : "";
+    setMessage(`${action} ${application.title || "current job"}${companyText}.`, false, true);
+  } catch (error) {
+    setMessage(getErrorMessage(error), true);
+  } finally {
+    recordJobButton.disabled = false;
+  }
+}
+
+async function openApplicationTracker() {
+  const trackerUrl = chrome.runtime.getURL("jobs.html");
+
+  try {
+    await chrome.tabs.create({ url: trackerUrl });
+  } catch (_error) {
+    window.open(trackerUrl, "_blank", "noopener,noreferrer");
   }
 }
 

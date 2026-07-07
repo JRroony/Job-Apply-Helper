@@ -2,12 +2,11 @@
 
 A plain JavaScript Chrome Manifest V3 extension that stores your job application profile locally and fills matching fields on the current page. It does not call external APIs and it never submits applications.
 
-## Files
+## Architecture
 
-- `manifest.json`: Chrome MV3 configuration.
-- `background.js`: Receives popup fill requests and forwards them to the active tab.
-- `popup.html`, `popup.css`, `popup.js`: Profile editor, resume upload, and popup actions.
-- `content.js`: Form detection and autofill logic.
+The root manifest stays as the Chrome MV3 entry point. Runtime code now lives under `src` and is grouped by responsibility: the service worker coordinates active-tab actions, the content layer reads and fills the current page, the popup owns profile actions, the tracker owns the applications table, and shared helpers hold local storage record logic.
+
+This keeps UI code beside its markup/styles, keeps page-reading logic out of the popup, and gives tracker-related storage rules one shared home.
 
 ## Load In Chrome
 

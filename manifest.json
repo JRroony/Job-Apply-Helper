@@ -13,10 +13,10 @@
   ],
   "action": {
     "default_title": "Job Autofill",
-    "default_popup": "popup.html"
+    "default_popup": "src/popup/popup.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "src/background/background.js"
   },
   "content_scripts": [
     {
@@ -24,7 +24,7 @@
         "<all_urls>"
       ],
       "js": [
-        "content.js"
+        "src/content/content.js"
       ],
       "run_at": "document_idle"
     }

@@ -1,4 +1,4 @@
-importScripts("applications.js");
+importScripts("../shared/applications.js");
 
 const FILL_ACTIVE_TAB = "FILL_ACTIVE_TAB";
 const FILL_FORM = "FILL_FORM";
@@ -78,7 +78,7 @@ async function fillActiveTab() {
 
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      files: ["content.js"]
+      files: ["src/content/content.js"]
     });
 
     return sendFillMessage(tab.id, payload);
@@ -135,7 +135,7 @@ async function recordCurrentJob() {
 
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
-      files: ["content.js"]
+      files: ["src/content/content.js"]
     });
 
     response = await sendJobInfoMessage(tab.id, payload);

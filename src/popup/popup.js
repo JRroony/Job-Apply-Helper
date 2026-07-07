@@ -218,7 +218,7 @@ async function recordCurrentJob() {
 }
 
 async function openApplicationTracker() {
-  const trackerUrl = chrome.runtime.getURL("jobs.html");
+  const trackerUrl = chrome.runtime.getURL("src/tracker/jobs.html");
 
   try {
     await chrome.tabs.create({ url: trackerUrl });

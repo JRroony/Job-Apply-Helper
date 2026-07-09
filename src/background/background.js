@@ -4,6 +4,7 @@ const FILL_ACTIVE_TAB = "FILL_ACTIVE_TAB";
 const FILL_FORM = "FILL_FORM";
 const RECORD_CURRENT_JOB = "RECORD_CURRENT_JOB";
 const EXTRACT_JOB_INFO = "EXTRACT_JOB_INFO";
+const APPLICATIONS_STORAGE_KEY = "applications";
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (!message) {
@@ -17,7 +18,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse({
           filledCount: 0,
           resumeAttached: false,
-          error: error && error.message ? error.message : String(error)
+          error: getErrorMessage(error)
         });
       });
 
@@ -30,7 +31,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       .catch((error) => {
         sendResponse({
           ok: false,
-          error: error && error.message ? error.message : String(error)
+          error: getErrorMessage(error)
         });
       });
 
@@ -41,24 +42,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 });
 
 async function fillActiveTab() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-
-  if (!tab || typeof tab.id !== "number") {
-    return {
-      filledCount: 0,
-      resumeAttached: false,
-      error: "No active tab was found."
-    };
-  }
-
-  if (!tab.url || !/^https?:\/\//i.test(tab.url)) {
-    return {
-      filledCount: 0,
-      resumeAttached: false,
-      error: "This extension can only fill regular http/https pages."
-    };
-  }
-
+  const tab = await getActiveHttpTab("This extension can only fill regular http/https pages.");
   const stored = await chrome.storage.local.get(["profile", "resume"]);
   const payload = {
     type: FILL_FORM,
@@ -67,22 +51,38 @@ async function fillActiveTab() {
     overwrite: true
   };
 
-  try {
-    return await sendFillMessage(tab.id, payload);
-  } catch (firstError) {
-    const message = firstError && firstError.message ? firstError.message : String(firstError);
+  let fillResult;
 
-    if (!/receiving end does not exist|could not establish connection/i.test(message)) {
+  try {
+    fillResult = await sendFillMessage(tab.id, payload);
+  } catch (firstError) {
+    const message = getErrorMessage(firstError);
+
+    if (!isMissingContentScriptError(message)) {
       throw firstError;
     }
 
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ["src/content/content.js"]
-    });
-
-    return sendFillMessage(tab.id, payload);
+    await injectContentScript(tab.id);
+    fillResult = await sendFillMessage(tab.id, payload);
   }
+
+  if (fillResult && !fillResult.error) {
+    const recordResult = await recordApplicationFromTab(tab, { status: "applied" })
+      .catch((error) => ({
+        ok: false,
+        error: getErrorMessage(error)
+      }));
+
+    return {
+      ...fillResult,
+      applicationRecorded: Boolean(recordResult.ok),
+      applicationAction: recordResult.action || null,
+      application: recordResult.application || null,
+      applicationRecordError: recordResult.ok ? null : recordResult.error || "Could not record this application."
+    };
+  }
+
+  return fillResult;
 }
 
 function sendFillMessage(tabId, payload) {
@@ -105,41 +105,12 @@ function sendFillMessage(tabId, payload) {
 }
 
 async function recordCurrentJob() {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const tab = await getActiveHttpTab("This extension can only record regular http/https pages.");
+  return recordApplicationFromTab(tab, { status: "applied" });
+}
 
-  if (!tab || typeof tab.id !== "number") {
-    return {
-      ok: false,
-      error: "No active tab was found."
-    };
-  }
-
-  if (!tab.url || !/^https?:\/\//i.test(tab.url)) {
-    return {
-      ok: false,
-      error: "This extension can only record regular http/https pages."
-    };
-  }
-
-  const payload = { type: EXTRACT_JOB_INFO };
-  let response;
-
-  try {
-    response = await sendJobInfoMessage(tab.id, payload);
-  } catch (firstError) {
-    const message = firstError && firstError.message ? firstError.message : String(firstError);
-
-    if (!/receiving end does not exist|could not establish connection|did not return job info/i.test(message)) {
-      throw firstError;
-    }
-
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ["src/content/content.js"]
-    });
-
-    response = await sendJobInfoMessage(tab.id, payload);
-  }
+async function recordApplicationFromTab(tab, options = {}) {
+  const response = await getJobInfoFromTab(tab);
 
   if (response.error) {
     return {
@@ -152,17 +123,36 @@ async function recordCurrentJob() {
     ...(response.jobInfo || {}),
     application_url: (response.jobInfo && response.jobInfo.application_url) || tab.url
   };
-  const application = ApplicationTracker.createApplicationRecord(jobInfo, { status: "applied" });
-  const stored = await chrome.storage.local.get(["applications"]);
-  const result = ApplicationTracker.dedupeApplications(stored.applications || [], application);
+  const application = ApplicationTracker.createApplicationRecord(jobInfo, {
+    status: options.status || "applied"
+  });
+  const stored = await chrome.storage.local.get([APPLICATIONS_STORAGE_KEY]);
+  const result = ApplicationTracker.dedupeApplications(stored[APPLICATIONS_STORAGE_KEY] || [], application);
 
-  await chrome.storage.local.set({ applications: result.applications });
+  await chrome.storage.local.set({ [APPLICATIONS_STORAGE_KEY]: result.applications });
 
   return {
     ok: true,
     action: result.action,
     application: result.application
   };
+}
+
+async function getJobInfoFromTab(tab) {
+  const payload = { type: EXTRACT_JOB_INFO };
+
+  try {
+    return await sendJobInfoMessage(tab.id, payload);
+  } catch (firstError) {
+    const message = getErrorMessage(firstError);
+
+    if (!isMissingContentScriptError(message) && !/did not return job info/i.test(message)) {
+      throw firstError;
+    }
+
+    await injectContentScript(tab.id);
+    return sendJobInfoMessage(tab.id, payload);
+  }
 }
 
 function sendJobInfoMessage(tabId, payload) {
@@ -183,4 +173,33 @@ function sendJobInfoMessage(tabId, payload) {
       resolve(response);
     });
   });
+}
+
+async function getActiveHttpTab(nonHttpErrorMessage) {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (!tab || typeof tab.id !== "number") {
+    throw new Error("No active tab was found.");
+  }
+
+  if (!tab.url || !/^https?:\/\//i.test(tab.url)) {
+    throw new Error(nonHttpErrorMessage);
+  }
+
+  return tab;
+}
+
+function injectContentScript(tabId) {
+  return chrome.scripting.executeScript({
+    target: { tabId },
+    files: ["src/content/content.js"]
+  });
+}
+
+function isMissingContentScriptError(message) {
+  return /receiving end does not exist|could not establish connection/i.test(message || "");
+}
+
+function getErrorMessage(error) {
+  return error && error.message ? error.message : String(error);
 }

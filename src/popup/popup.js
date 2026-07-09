@@ -186,10 +186,28 @@ async function refillCurrentPage() {
     }
 
     const resumeText = result.resumeAttached ? " Resume attached." : "";
-    setMessage(`Filled ${result.filledCount || 0} field(s).${resumeText}`, false, true);
+    const trackerText = buildTrackerMessage(result);
+    setMessage(`Filled ${result.filledCount || 0} field(s).${resumeText}${trackerText}`, false, true);
   } catch (error) {
     setMessage(getErrorMessage(error), true);
   }
+}
+
+function buildTrackerMessage(result) {
+  if (result.applicationRecorded) {
+    const application = result.application || {};
+    const action = result.applicationAction === "updated" ? "Updated" : "Recorded";
+    const title = application.title || "current job";
+    const companyText = application.company ? ` at ${application.company}` : "";
+
+    return ` ${action} ${title}${companyText} in tracker.`;
+  }
+
+  if (result.applicationRecordError) {
+    return ` Tracker not updated: ${result.applicationRecordError}`;
+  }
+
+  return "";
 }
 
 async function recordCurrentJob() {

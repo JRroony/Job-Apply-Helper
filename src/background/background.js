@@ -7,7 +7,7 @@ const EXTRACT_JOB_INFO = "EXTRACT_JOB_INFO";
 const APPLICATIONS_STORAGE_KEY = "applications";
 const CONTENT_SCRIPT_FILES = [
   "src/content/safe-click-guard.js",
-  "src/content/content.js"
+  "src/content/content-safe.js"
 ];
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {

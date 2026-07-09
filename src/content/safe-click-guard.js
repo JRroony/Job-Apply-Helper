@@ -5,7 +5,7 @@
 
   window.__localJobAutofillSafeClickGuardInstalled = true;
 
-  const BLOCKED_LINK_PATTERN = /(?:\.pdf(?:$|[?#])|race\s*&\s*ethnicity\s*definitions?|race\s+and\s+ethnicity\s+definitions?|eeo\s+definitions?|demographic\s+definitions?|definitions?\s+pdf)/i;
+  const BLOCKED_LINK_PATTERN = /(?:\.pdf(?:$|[?#])|race\s*&\s*ethnicity\s*definitions?|race\s+and\s+ethnicity\s+definitions?|eeo|equal\s+employment|demographic\s+definitions?|definitions?\s+pdf|policy|privacy|terms|notice|learn\s+more|poster|law)/i;
 
   document.addEventListener("click", (event) => {
     if (event.isTrusted) {
@@ -37,7 +37,7 @@
 
     event.preventDefault();
     event.stopImmediatePropagation();
-    console.warn("Blocked an autofill-generated click on a definitions/PDF link.", {
+    console.warn("Blocked an autofill-generated click on an EEO/policy/PDF link.", {
       href: link.getAttribute("href")
     });
   }, true);

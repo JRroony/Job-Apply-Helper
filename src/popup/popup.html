@@ -53,9 +53,52 @@
             </select>
           </label>
 
+          <div class="section-note span-2">
+            <h2>Address / location fields</h2>
+            <p>Used for forms that split address into city, state, country, and postal code.</p>
+          </div>
+
           <label class="span-2">
-            <span>Location</span>
-            <input id="location" name="location" autocomplete="address-level2">
+            <span>General location</span>
+            <input id="location" name="location" placeholder="Seattle, WA">
+          </label>
+
+          <label class="span-2">
+            <span>Address line 1</span>
+            <input id="addressLine1" name="addressLine1" autocomplete="address-line1">
+          </label>
+
+          <label class="span-2">
+            <span>Address line 2</span>
+            <input id="addressLine2" name="addressLine2" autocomplete="address-line2">
+          </label>
+
+          <label>
+            <span>City</span>
+            <input id="city" name="city" autocomplete="address-level2">
+          </label>
+
+          <label>
+            <span>State / province</span>
+            <input id="state" name="state" autocomplete="address-level1" placeholder="WA or Washington">
+          </label>
+
+          <label>
+            <span>Postal / ZIP code</span>
+            <input id="postalCode" name="postalCode" autocomplete="postal-code">
+          </label>
+
+          <label>
+            <span>Country of residence</span>
+            <select id="countryOfResidence" name="countryOfResidence" autocomplete="country-name">
+              <option value="">Select...</option>
+              <option value="United States">United States</option>
+              <option value="Canada">Canada</option>
+              <option value="China">China</option>
+              <option value="India">India</option>
+              <option value="United Kingdom">United Kingdom</option>
+              <option value="Other">Other</option>
+            </select>
           </label>
 
           <label class="span-2">
@@ -106,9 +149,41 @@
           </label>
 
           <div class="section-note span-2">
-            <h2>Voluntary EEO / demographic fields</h2>
-            <p>Sensitive optional fields. Blank values are skipped.</p>
+            <h2>Voluntary Self-Identification</h2>
+            <p>Sensitive optional fields. Blank values are skipped and never inferred.</p>
           </div>
+
+          <label class="span-2">
+            <span>Gender</span>
+            <select id="gender" name="gender">
+              <option value="">Select...</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Non-binary">Non-binary</option>
+              <option value="Prefer not to answer">Prefer not to answer</option>
+            </select>
+          </label>
+
+          <label class="span-2">
+            <span>Are you Hispanic/Latino?</span>
+            <select id="hispanicLatino" name="hispanicLatino">
+              <option value="">Select...</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+              <option value="Prefer not to answer">Prefer not to answer</option>
+            </select>
+          </label>
+
+          <fieldset class="choice-group span-2" id="raceGroup">
+            <legend>Please identify your race</legend>
+            <label><input type="checkbox" name="race" value="American Indian or Alaska Native"> <span>American Indian or Alaska Native</span></label>
+            <label><input type="checkbox" name="race" value="Asian"> <span>Asian</span></label>
+            <label><input type="checkbox" name="race" value="Black or African American"> <span>Black or African American</span></label>
+            <label><input type="checkbox" name="race" value="Native Hawaiian or Other Pacific Islander"> <span>Native Hawaiian or Other Pacific Islander</span></label>
+            <label><input type="checkbox" name="race" value="White"> <span>White</span></label>
+            <label><input type="checkbox" name="race" value="Two or more races"> <span>Two or more races</span></label>
+            <label><input type="checkbox" name="race" value="Prefer not to answer"> <span>Prefer not to answer</span></label>
+          </fieldset>
 
           <fieldset class="choice-group span-2" id="genderIdentityGroup">
             <legend>Gender identity</legend>

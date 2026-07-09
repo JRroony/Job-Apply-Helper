@@ -6,6 +6,12 @@ const PROFILE_FIELDS = [
   "phone",
   "phoneCountryCode",
   "location",
+  "addressLine1",
+  "addressLine2",
+  "city",
+  "state",
+  "postalCode",
+  "countryOfResidence",
   "linkedin",
   "github",
   "portfolio",
@@ -13,6 +19,9 @@ const PROFILE_FIELDS = [
   "workAuthorization",
   "needSponsorship",
   "relocation",
+  "gender",
+  "hispanicLatino",
+  "race",
   "genderIdentity",
   "racialEthnicBackground",
   "sexualOrientation",
@@ -23,6 +32,7 @@ const PROFILE_FIELDS = [
 ];
 
 const ARRAY_PROFILE_FIELDS = new Set([
+  "race",
   "genderIdentity",
   "racialEthnicBackground",
   "sexualOrientation"

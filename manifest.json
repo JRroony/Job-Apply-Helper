@@ -25,7 +25,7 @@
       ],
       "js": [
         "src/content/safe-click-guard.js",
-        "src/content/content.js"
+        "src/content/content-safe.js"
       ],
       "run_at": "document_idle"
     }

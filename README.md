@@ -1,6 +1,6 @@
 # Local Job Application Autofill
 
-A plain JavaScript Chrome Manifest V3 extension that stores your job application profile locally and fills matching fields on the current page. It does not call external APIs and it never submits applications.
+A plain JavaScript Chrome Manifest V3 extension that stores your job application profile locally, fills matching fields on the current page, and records refill actions in a local application tracker. It does not call external APIs and it never submits applications.
 
 ## Architecture
 
@@ -15,14 +15,34 @@ This keeps UI code beside its markup/styles, keeps page-reading logic out of the
 3. Click `Load unpacked`.
 4. Select this extension folder.
 5. Open a job application page, click the extension icon, save your profile, then choose `Refill Current Page`.
+6. Open `Application Tracker` from the popup to review locally recorded applications.
 
 ## Privacy
 
-All profile and resume data is stored with `chrome.storage.local` on your machine. The extension does not send data to any server or external API.
+All profile, resume, and application tracker data is stored with `chrome.storage.local` on your machine. The extension does not send data to any server or external API.
 
 ## Manual Review Required
 
 This extension only autofills fields. It never clicks submit, apply, continue, or similar buttons. Review every field before submitting an application manually.
+
+## Application Tracker
+
+When you click `Refill Current Page`, the extension now also tries to record the current application in the local tracker. It extracts the job title, company, application URL, and source from the page, saves the record with status `applied`, and deduplicates by normalized application URL.
+
+You can also click `Record Current Job` if you want to record a page without running autofill again.
+
+The tracker table includes:
+
+- Title
+- Company
+- Application URL
+- Applied At
+- Status
+- Source
+- Notes
+- Actions
+
+The tracker supports searching, status filtering, inline status changes, notes, deletion, CSV export, JSON export, and JSON import.
 
 ## Autofill Coverage
 
@@ -34,8 +54,8 @@ It can fill a phone country-code dropdown next to a phone input when `phoneCount
 
 It can also fill voluntary EEO or demographic questions for gender identity, racial or ethnic background, sexual orientation, transgender identity, disability status, and veteran status. These sensitive fields use fixed popup choices, are never inferred, and blank values are skipped.
 
-On page load, autofill skips fields that already appear selected or filled. The `Refill Current Page` button overwrites with the saved local setup values.
+On page load, autofill skips fields that already appear selected or filled. The `Refill Current Page` button overwrites with the saved local setup values and records the current job in the tracker.
 
 ## Limitations
 
-Some applicant tracking systems use custom components that do not behave like native form fields. Fields inside cross-origin iframes may not be accessible to the extension. Closed shadow DOM and heavily scripted upload widgets may also block normal autofill or resume attachment. In those cases, fill the missing fields manually.
+Some applicant tracking systems use custom components that do not behave like native form fields. Fields inside cross-origin iframes may not be accessible to the extension. Closed shadow DOM and heavily scripted upload widgets may also block normal autofill, job-info extraction, or resume attachment. In those cases, fill the missing fields manually and use `Record Current Job` if needed.

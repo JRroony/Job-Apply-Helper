@@ -5,6 +5,10 @@ const FILL_FORM = "FILL_FORM";
 const RECORD_CURRENT_JOB = "RECORD_CURRENT_JOB";
 const EXTRACT_JOB_INFO = "EXTRACT_JOB_INFO";
 const APPLICATIONS_STORAGE_KEY = "applications";
+const CONTENT_SCRIPT_FILES = [
+  "src/content/safe-click-guard.js",
+  "src/content/content.js"
+];
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (!message) {
@@ -62,7 +66,7 @@ async function fillActiveTab() {
       throw firstError;
     }
 
-    await injectContentScript(tab.id);
+    await injectContentScripts(tab.id);
     fillResult = await sendFillMessage(tab.id, payload);
   }
 
@@ -150,7 +154,7 @@ async function getJobInfoFromTab(tab) {
       throw firstError;
     }
 
-    await injectContentScript(tab.id);
+    await injectContentScripts(tab.id);
     return sendJobInfoMessage(tab.id, payload);
   }
 }
@@ -189,10 +193,10 @@ async function getActiveHttpTab(nonHttpErrorMessage) {
   return tab;
 }
 
-function injectContentScript(tabId) {
+function injectContentScripts(tabId) {
   return chrome.scripting.executeScript({
     target: { tabId },
-    files: ["src/content/content.js"]
+    files: CONTENT_SCRIPT_FILES
   });
 }
 
